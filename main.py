@@ -36,9 +36,11 @@ def _lookback_link(archive_root: Path, date: datetime, mode: str) -> str:
 
 
 def run(mode: str, dry_run: bool) -> None:
-    from fetchers.anthropic_fetcher import fetch_all as fetch_anthropic
-    from fetchers.chinese_ai import fetch_all as fetch_cn
-    from fetchers.global_ai import fetch_all as fetch_global
+    from fetchers.anthropic_fetcher import (
+        fetch_anthropic_news, fetch_anthropic_research, fetch_anthropic_github,
+    )
+    from fetchers.chinese_ai import fetch_chinese_ai
+    from fetchers.global_ai import fetch_global_ai
     from processors.dedup import dedup
     from processors.summarizer import score_articles, generate_insight
     from processors.linker import link_related
@@ -50,7 +52,10 @@ def run(mode: str, dry_run: bool) -> None:
 
     # ── 1. Fetch ──────────────────────────────────────────────────────────────
     print("Fetching sources …")
-    articles = fetch_anthropic() + fetch_cn() + fetch_global()
+    articles = (
+        fetch_anthropic_news() + fetch_anthropic_research() + fetch_anthropic_github()
+        + fetch_chinese_ai() + fetch_global_ai()
+    )
     print(f"  Raw articles: {len(articles)}")
 
     # ── 2. Dedup ──────────────────────────────────────────────────────────────
