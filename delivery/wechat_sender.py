@@ -1,93 +1,189 @@
 """
 Send a local file to WeChat via the ilink API.
 
+Ported from wechat-claude-code dist/wechat/upload.js + send.js.
+
 Required env vars (from .env):
-  ILINK_TOKEN   – ilink auth token (keep secret, never commit)
-  WECHAT_UID    – target WeChat user UID
-
-ilink flow:
-  1. POST /bot/getuploadurl  → upload_url + upload_params
-  2. POST upload_url (multipart, AES-ECB encrypted payload) → x-encrypted-param header
-  3. POST /bot/sendmessage with x-encrypted-param → delivers file to WeChat
+  ILINK_TOKEN   – full botToken string  e.g. "831abc945bee@im.bot:06000..."
+  WECHAT_UID    – target WeChat user UID e.g. "o9cq8089Lq...@im.wechat"
 """
-import os
-import json
-import struct
+import base64
 import hashlib
-import mimetypes
-import requests
+import os
+import secrets
+import time
 from pathlib import Path
+from urllib.parse import urlencode, quote
 
-ILINK_BASE = "https://ilinkai.weixin.qq.com"
-BLOCK_SIZE = 16
+import requests
+from Crypto.Cipher import AES
 
+CDN_BASE_URL = "https://novac2c.cdn.weixin.qq.com/c2c"
+ILINK_BASE   = "https://ilinkai.weixin.qq.com"
+BLOCK        = 16
+
+
+# ── AES-ECB PKCS7 ────────────────────────────────────────────────────────────
 
 def _pad(data: bytes) -> bytes:
-    pad_len = BLOCK_SIZE - len(data) % BLOCK_SIZE
-    return data + bytes([pad_len] * pad_len)
+    n = BLOCK - len(data) % BLOCK
+    return data + bytes([n] * n)
 
 
-def _aes_ecb_encrypt(key: bytes, plaintext: bytes) -> bytes:
-    from Crypto.Cipher import AES
-    cipher = AES.new(key, AES.MODE_ECB)
-    return cipher.encrypt(_pad(plaintext))
+def _aes_ecb_encrypt(key: bytes, data: bytes) -> bytes:
+    return AES.new(key, AES.MODE_ECB).encrypt(_pad(data))
 
 
-def _derive_key(token: str) -> bytes:
-    return hashlib.md5(token.encode()).digest()
+def _aes_padded_size(raw: int) -> int:
+    return raw + (BLOCK - raw % BLOCK)
 
+
+# ── ilink API client ──────────────────────────────────────────────────────────
+
+def _make_headers(token: str) -> dict:
+    uin = base64.b64encode(secrets.token_bytes(4)).decode()
+    return {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+        "AuthorizationType": "ilink_bot_token",
+        "X-WECHAT-UIN": uin,
+    }
+
+
+def _api(path: str, token: str, body: dict, timeout: int = 15) -> dict:
+    r = requests.post(
+        f"{ILINK_BASE}/{path}",
+        headers=_make_headers(token),
+        json=body,
+        timeout=timeout,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+# ── upload ────────────────────────────────────────────────────────────────────
+
+def _upload_file(token: str, to_user_id: str, file_path: str) -> dict:
+    path = Path(file_path)
+    plaintext = path.read_bytes()
+    raw_size   = len(plaintext)
+    raw_md5    = hashlib.md5(plaintext).hexdigest()
+    file_size  = _aes_padded_size(raw_size)
+
+    file_key   = secrets.token_hex(16)       # 32-hex string
+    aes_key    = secrets.token_bytes(16)     # 16 raw bytes
+    aes_key_hex = aes_key.hex()             # 32-hex string
+
+    # determine media_type: 1=image, 3=file
+    img_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".ico"}
+    media_type = 1 if path.suffix.lower() in img_exts else 3
+
+    # Step 1 – get upload URL
+    resp = _api("ilink/bot/getuploadurl", token, {
+        "filekey":      file_key,
+        "media_type":   media_type,
+        "to_user_id":   to_user_id,
+        "rawsize":      raw_size,
+        "rawfilemd5":   raw_md5,
+        "filesize":     file_size,
+        "no_need_thumb": True,
+        "aeskey":       aes_key_hex,
+        "base_info": {
+            "channel_version": "2.0.0",
+            "bot_agent":       "claude-digest-bot",
+        },
+    })
+
+    if not resp.get("upload_full_url") and not resp.get("upload_param"):
+        raise RuntimeError(f"getuploadurl failed: {resp}")
+
+    # Step 2 – encrypt and upload to CDN
+    encrypted = _aes_ecb_encrypt(aes_key, plaintext)
+
+    if resp.get("upload_full_url"):
+        cdn_url = resp["upload_full_url"]
+    else:
+        cdn_url = (
+            f"{CDN_BASE_URL}/upload"
+            f"?encrypted_query_param={quote(resp['upload_param'])}"
+            f"&filekey={file_key}"
+        )
+
+    cdn_resp = requests.post(
+        cdn_url,
+        data=encrypted,
+        headers={"Content-Type": "application/octet-stream"},
+        timeout=60,
+    )
+    cdn_resp.raise_for_status()
+
+    enc_query_param = cdn_resp.headers.get("x-encrypted-param")
+    if not enc_query_param:
+        raise RuntimeError("CDN upload succeeded but x-encrypted-param header missing")
+
+    # aes_key sent to ilink = base64( hex_string_bytes ), NOT base64(raw_bytes)
+    aes_key_b64 = base64.b64encode(aes_key_hex.encode()).decode()
+
+    return {
+        "media_type":        media_type,
+        "enc_query_param":   enc_query_param,
+        "aes_key_b64":       aes_key_b64,
+        "file_name":         path.name,
+        "file_size":         file_size,
+        "raw_size":          raw_size,
+    }
+
+
+# ── send ──────────────────────────────────────────────────────────────────────
 
 def send_file(file_path: str) -> bool:
-    token = os.environ.get("ILINK_TOKEN", "")
-    uid = os.environ.get("WECHAT_UID", "")
+    token  = os.environ.get("ILINK_TOKEN", "")
+    uid    = os.environ.get("WECHAT_UID", "")
+    bot_id = token.split(":")[0] if ":" in token else token
+
     if not token or not uid:
         raise EnvironmentError("ILINK_TOKEN and WECHAT_UID must be set in environment.")
 
-    path = Path(file_path)
-    if not path.exists():
-        raise FileNotFoundError(f"File not found: {file_path}")
+    media = _upload_file(token, uid, file_path)
 
-    file_bytes = path.read_bytes()
-    mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    client_id = f"digest-{int(time.time() * 1000)}"
 
-    # Step 1: get upload URL
-    r = requests.post(
-        f"{ILINK_BASE}/bot/getuploadurl",
-        headers=headers,
-        json={"filename": path.name, "size": len(file_bytes)},
-        timeout=30,
-    )
-    r.raise_for_status()
-    data = r.json()
-    upload_url: str = data["upload_url"]
-    upload_params: dict = data.get("upload_params", {})
+    if media["media_type"] == 1:  # image
+        item = {
+            "type": 2,
+            "image_item": {
+                "media": {
+                    "encrypt_query_param": media["enc_query_param"],
+                    "aes_key":             media["aes_key_b64"],
+                    "encrypt_type":        1,
+                },
+                "mid_size": media["file_size"],
+            },
+        }
+    else:  # file
+        item = {
+            "type": 4,
+            "file_item": {
+                "media": {
+                    "encrypt_query_param": media["enc_query_param"],
+                    "aes_key":             media["aes_key_b64"],
+                    "encrypt_type":        1,
+                },
+                "file_name": media["file_name"],
+                "len":       str(media["raw_size"]),
+            },
+        }
 
-    # Step 2: encrypt and upload
-    key = _derive_key(token)
-    encrypted = _aes_ecb_encrypt(key, file_bytes)
+    result = _api("ilink/bot/sendmessage", token, {
+        "msg": {
+            "from_user_id":  bot_id,
+            "to_user_id":    uid,
+            "client_id":     client_id,
+            "message_type":  2,   # BOT
+            "message_state": 2,   # FINISH
+            "context_token": "",
+            "item_list":     [item],
+        }
+    })
 
-    upload_resp = requests.post(
-        upload_url,
-        files={"file": (path.name, encrypted, mime_type)},
-        data=upload_params,
-        timeout=60,
-    )
-    upload_resp.raise_for_status()
-    x_enc_param = upload_resp.headers.get("x-encrypted-param", "")
-
-    # Step 3: send to WeChat user
-    send_resp = requests.post(
-        f"{ILINK_BASE}/bot/sendmessage",
-        headers=headers,
-        json={
-            "to_user": uid,
-            "msg_type": "file",
-            "x_encrypted_param": x_enc_param,
-            "filename": path.name,
-        },
-        timeout=30,
-    )
-    send_resp.raise_for_status()
-    result = send_resp.json()
-    return result.get("errcode", -1) == 0
+    return result.get("ret", -1) == 0
