@@ -1,0 +1,72 @@
+schedule:
+  morning: "30 23 * * *"   # 07:30 Beijing (UTC+8 = 23:30 UTC)
+  evening: "0 13 * * *"    # 21:00 Beijing
+
+fetch:
+  max_items_per_source: 10
+  min_importance_score: 3   # 1-5, keep >= 3
+
+sources:
+  claude_anthropic:
+    - name: "Anthropic News"
+      url: "https://www.anthropic.com/news"
+      type: scrape
+      weight: 5
+    - name: "Anthropic Research"
+      url: "https://www.anthropic.com/research"
+      type: scrape
+      weight: 5
+    - name: "Anthropic GitHub"
+      type: github_org
+      org: "anthropics"
+      weight: 4
+
+  chinese_ai:
+    - name: "机器之心"
+      url: "https://www.jiqizhixin.com/rss"
+      type: rss
+      weight: 3
+    - name: "量子位"
+      url: "https://www.qbitai.com/feed"
+      type: rss
+      weight: 3
+    - name: "36kr AI"
+      url: "https://36kr.com/feed"
+      type: rss
+      keywords: ["AI", "人工智能", "大模型", "LLM"]
+      weight: 3
+    - name: "极客公园"
+      url: "https://www.geekpark.net/rss"
+      type: rss
+      weight: 2
+
+  global_ai:
+    - name: "OpenAI News"
+      url: "https://openai.com/news/rss"
+      type: rss
+      weight: 4
+    - name: "Google DeepMind"
+      url: "https://deepmind.google/blog/rss.xml"
+      type: rss
+      weight: 4
+    - name: "Hugging Face Blog"
+      url: "https://huggingface.co/blog/feed.xml"
+      type: rss
+      weight: 3
+    - name: "The Verge AI"
+      url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+      type: rss
+      weight: 3
+    - name: "TechCrunch AI"
+      url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+      type: rss
+      weight: 3
+
+ai:
+  summarize_model: "deepseek-chat"       # Fast: sonnet/haiku tier
+  analyze_model: "deepseek-reasoner"     # Deep: opus tier, once per run
+  api_base: "https://api.deepseek.com"
+
+output:
+  archive_dir: "./archive"
+  formats: ["md", "html"]

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>AI 日报 · {{ date_str }} {{ mode_label }}</title>
+<style>
+/* ── 设计令牌 ──────────────────────────────────────────────── */
+:root {
+  --bg:           #FAF9F7;
+  --bg-surface:   #F2F0ED;
+  --bg-insight:   #FEF6F0;
+  --text-primary: #1A1614;
+  --text-body:    #3D3833;
+  --text-muted:   #9B9591;
+  --border:       #E8E5E1;
+  --border-light: #F0EDE9;
+
+  --claude:  #CC785C;
+  --cn:      #C8201A;
+  --global:  #1D50B4;
+
+  --f-display: "PingFang SC", "Noto Serif CJK SC", "Source Han Serif SC",
+               "Songti SC", Georgia, "Times New Roman", serif;
+  --f-body:    -apple-system, "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei UI", "Noto Sans CJK SC", sans-serif;
+  --f-mono:    "SF Mono", "Cascadia Mono", "Consolas",
+               "Courier New", monospace;
+
+  --radius:  3px;
+  --shadow:  0 1px 3px rgba(0,0,0,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #171412;
+    --bg-surface:   #201D1A;
+    --bg-insight:   #221A16;
+    --text-primary: #F2EDE8;
+    --text-body:    #C5BDB6;
+    --text-muted:   #6E6760;
+    --border:       #2C2824;
+    --border-light: #252220;
+
+    --claude:  #E0916E;
+    --cn:      #F47270;
+    --global:  #6EA0E8;
+  }
+}
+
+/* ── 基础重置 ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  word-break: break-word;
+  overflow-x: hidden;
+}
+
+a { color: inherit; }
+
+/* ── 页面容器 ──────────────────────────────────────────────── */
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 56px;
+}
+
+/* ── 头部 ──────────────────────────────────────────────────── */
+.dh {
+  padding: 28px 22px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dh__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dh__date {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.dh__badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 8px 2px 7px;
+  border-radius: var(--radius);
+  background: var(--claude);
+  color: #fff;
+}
+
+.dh__title {
+  font-family: var(--f-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  color: var(--text-primary);
+}
+
+.dh__sub {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: .03em;
+}
+
+/* ── 今日洞察 ──────────────────────────────────────────────── */
+.insight {
+  margin: 20px 22px 0;
+  padding: 20px 20px 20px 18px;
+  background: var(--bg-insight);
+  border-left: 3px solid var(--claude);
+  position: relative;
+}
+
+.insight::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: var(--bg-insight);
+  z-index: -1;
+}
+
+.insight__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--claude);
+  margin-bottom: 10px;
+  font-family: var(--f-body);
+}
+
+.insight__text {
+  font-family: var(--f-display);
+  font-size: 15.5px;
+  line-height: 1.85;
+  color: var(--text-body);
+  font-style: normal;
+}
+
+/* ── 专区通用 ──────────────────────────────────────────────── */
+.zone {
+  margin-top: 28px;
+}
+
+.zone__head {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 22px 10px;
+  border-bottom: 1.5px solid var(--zone-color);
+}
+
+.zone__name {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--zone-color);
+}
+
+.zone__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--f-mono);
+}
+
+.zone--claude { --zone-color: var(--claude); }
+.zone--cn     { --zone-color: var(--cn); }
+.zone--global { --zone-color: var(--global); }
+
+.zone__articles {
+  padding: 0 22px;
+}
+
+.zone__empty {
+  padding: 18px 0 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── 文章卡片 ──────────────────────────────────────────────── */
+.ac {
+  padding: 16px 0 14px;
+  border-bottom: 1px solid var(--border-light);
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 0 7px;
+}
+
+.ac:last-child { border-bottom: none; }
+
+.ac__imp {
+  padding-top: 2px;
+  font-size: 12px;
+  letter-spacing: -.04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.ac__body { min-width: 0; }
+
+.ac__title {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+  text-decoration: none;
+  text-wrap: pretty;
+  transition: opacity .15s;
+  margin-bottom: 5px;
+}
+
+.ac__title:active { opacity: .65; }
+
+/* 在支持 hover 的设备上才显示 hover 效果 */
+@media (hover: hover) {
+  .ac__title:hover { color: var(--zone-color, var(--claude)); }
+}
+
+.ac__summary {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-body);
+  margin-bottom: 8px;
+  text-wrap: pretty;
+}
+
+.ac__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.ac__source {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-family: var(--f-mono);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.ac__tag {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 10px;
+  color: #fff;
+  white-space: nowrap;
+  letter-spacing: .02em;
+}
+
+/* ── 温故知新 ──────────────────────────────────────────────── */
+.lookback {
+  margin: 36px 22px 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+.lookback__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.lookback__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text-body);
+  font-size: 13px;
+  gap: 10px;
+  transition: border-color .15s;
+}
+
+@media (hover: hover) {
+  .lookback__card:hover {
+    border-color: var(--claude);
+    color: var(--text-primary);
+  }
+}
+
+.lookback__card::after {
+  content: '→';
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ── 页脚 ──────────────────────────────────────────────────── */
+.footer {
+  margin-top: 40px;
+  padding: 18px 22px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer__text {
+  font-size: 11px;
+  font-family: var(--f-mono);
+  color: var(--text-muted);
+  letter-spacing: .04em;
+}
+
+.footer__link {
+  font-size: 11px;
+  font-family: var(--f-mono);
+  color: var(--claude);
+  text-decoration: none;
+  letter-spacing: .04em;
+}
+
+@media (hover: hover) {
+  .footer__link:hover { text-decoration: underline; }
+}
+
+/* ── 响应式微调 ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .dh__title { font-size: 24px; }
+  .insight__text { font-size: 14.5px; }
+  .ac__title { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ▸ 头部 -->
+  <header class="dh">
+    <div class="dh__eyebrow">
+      <span class="dh__date">{{ date_str }}</span>
+      <span class="dh__badge">{{ mode_label }}</span>
+    </div>
+    <h1 class="dh__title">AI 日报</h1>
+    <p class="dh__sub">Claude · Anthropic · 国内外 AI 动态 · 每日精选</p>
+  </header>
+
+  <!-- ▸ 今日洞察 -->
+  <section class="insight">
+    <div class="insight__label">今日洞察</div>
+    <p class="insight__text">{{ insight }}</p>
+  </section>
+
+  <!-- ▸ 专区一：Claude / Anthropic -->
+  <section class="zone zone--claude">
+    <div class="zone__head">
+      <span class="zone__name">Claude / Anthropic</span>
+      {% if claude_articles %}
+      <span class="zone__count">{{ claude_articles | length }} 条</span>
+      {% endif %}
+    </div>
+    <div class="zone__articles">
+      {% if claude_articles %}
+        {% for article in claude_articles %}
+        <div class="ac">
+          <div class="ac__imp">{{ article.importance_icon }}</div>
+          <div class="ac__body">
+            <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
+            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+            <div class="ac__meta">
+              <span class="ac__source">{{ article.source }}</span>
+              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="zone__empty">暂无 Claude / Anthropic 相关动态</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ▸ 专区二：国内 AI 动态 -->
+  <section class="zone zone--cn">
+    <div class="zone__head">
+      <span class="zone__name">国内 AI 动态</span>
+      {% if chinese_articles %}
+      <span class="zone__count">{{ chinese_articles | length }} 条</span>
+      {% endif %}
+    </div>
+    <div class="zone__articles">
+      {% if chinese_articles %}
+        {% for article in chinese_articles %}
+        <div class="ac">
+          <div class="ac__imp">{{ article.importance_icon }}</div>
+          <div class="ac__body">
+            <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
+            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+            <div class="ac__meta">
+              <span class="ac__source">{{ article.source }}</span>
+              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="zone__empty">暂无国内 AI 动态</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ▸ 专区三：全球 AI 大事件 -->
+  <section class="zone zone--global">
+    <div class="zone__head">
+      <span class="zone__name">全球 AI 大事件</span>
+      {% if global_articles %}
+      <span class="zone__count">{{ global_articles | length }} 条</span>
+      {% endif %}
+    </div>
+    <div class="zone__articles">
+      {% if global_articles %}
+        {% for article in global_articles %}
+        <div class="ac">
+          <div class="ac__imp">{{ article.importance_icon }}</div>
+          <div class="ac__body">
+            <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
+            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+            <div class="ac__meta">
+              <span class="ac__source">{{ article.source }}</span>
+              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="zone__empty">暂无全球 AI 大事件</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ▸ 温故知新 -->
+  {% if lookback_html %}
+  <section class="lookback">
+    <div class="lookback__label">温故知新</div>
+    {{ lookback_html }}
+  </section>
+  {% endif %}
+
+  <!-- ▸ 页脚 -->
+  <footer class="footer">
+    <span class="footer__text">生成于 {{ date_str }} · claude-digest-bot</span>
+    <a class="footer__link" href="https://github.com/faruheaisha/claude-digest-bot" target="_blank" rel="noopener">GitHub ↗</a>
+  </footer>
+
+</div>
+</body>
+</html>
