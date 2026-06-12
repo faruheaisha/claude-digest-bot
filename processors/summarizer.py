@@ -23,8 +23,7 @@ def _claude_cli_insight(prompt: str, model: str = "claude-sonnet-4-6") -> str:
     Claude.ai OAuth tokens are not valid for direct API calls — use the CLI."""
     import subprocess
     result = subprocess.run(
-        ["/usr/local/bin/claude", "--model", model, "-p", prompt,
-         "--dangerously-skip-permissions"],
+        ["/usr/local/bin/claude", "--model", model, "-p", prompt],
         capture_output=True, text=True, timeout=120,
         env={**os.environ, "HOME": str(pathlib.Path.home())},
     )
