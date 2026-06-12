@@ -70,9 +70,10 @@ def run(mode: str, dry_run: bool) -> None:
     print("Scoring articles …")
     articles = score_articles(articles)
 
-    # filter low-importance
-    articles = [a for a in articles if a.importance >= 3]
-    print(f"  After importance filter (≥3): {len(articles)}")
+    # filter low-importance: morning = only important (≥4), evening = worth-knowing (≥3)
+    threshold = 4 if mode == "morning" else 3
+    articles = [a for a in articles if a.importance >= threshold]
+    print(f"  After importance filter (≥{threshold}): {len(articles)}")
 
     # ── 4. Global insight ─────────────────────────────────────────────────────
     print("Generating insight …")

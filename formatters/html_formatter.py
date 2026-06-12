@@ -29,7 +29,7 @@ def render_html(
 
     date_str = date.strftime("%Y-%m-%d")
     mode_label = "早报" if mode == "morning" else "晚报"
-    max_per_zone = 5 if mode == "morning" else 999
+    max_per_zone = 3 if mode == "morning" else 5
 
     by_zone: dict[str, list[Article]] = {z: [] for z in ZONE_ORDER}
     for a in articles:
