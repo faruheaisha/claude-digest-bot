@@ -174,7 +174,8 @@ def send_file(file_path: str) -> bool:
             },
         }
 
-    result = _api("ilink/bot/sendmessage", token, {
+    # ilink sendmessage returns {} on success (no ret field), raises on HTTP error
+    _api("ilink/bot/sendmessage", token, {
         "msg": {
             "from_user_id":  bot_id,
             "to_user_id":    uid,
@@ -185,5 +186,4 @@ def send_file(file_path: str) -> bool:
             "item_list":     [item],
         }
     })
-
-    return result.get("ret", -1) == 0
+    return True
