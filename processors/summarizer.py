@@ -18,16 +18,20 @@ def _get_scoring_client() -> Anthropic:
     )
 
 
-def _get_insight_client() -> Anthropic:
-    """Claude via OAuth credentials — uses Pro subscription.
-    SDK 0.40+ supports auth_token param which sends Authorization: Bearer header."""
-    creds_path = pathlib.Path.home() / ".claude" / ".credentials.json"
-    try:
-        creds = json.loads(creds_path.read_text())
-        token = creds["claudeAiOauth"]["accessToken"]
-        return Anthropic(auth_token=token)
-    except Exception:
-        return Anthropic()
+def _claude_cli_insight(prompt: str, model: str = "claude-sonnet-4-6") -> str:
+    """Call Claude via CLI subprocess (uses OAuth credentials automatically).
+    Claude.ai OAuth tokens are not valid for direct API calls — use the CLI."""
+    import subprocess
+    result = subprocess.run(
+        ["/usr/local/bin/claude", "--model", model, "-p", prompt,
+         "--dangerously-skip-permissions"],
+        capture_output=True, text=True, timeout=120,
+        env={**os.environ, "HOME": str(pathlib.Path.home())},
+    )
+    output = result.stdout.strip()
+    if not output and result.stderr:
+        raise RuntimeError(result.stderr[:200])
+    return output
 
 
 SCORE_SYSTEM = """你是一个专注于AI领域的信息分析师。
@@ -98,7 +102,6 @@ INSIGHT_SYSTEM = """你是AI领域的深度观察者。
 
 
 def generate_insight(articles: list[Article]) -> str:
-    client = _get_insight_client()
     model = os.getenv("ANALYZE_MODEL", "claude-sonnet-4-6")
 
     items = "\n".join(
@@ -106,17 +109,9 @@ def generate_insight(articles: list[Article]) -> str:
         for a in articles if a.importance >= 3
     )
 
+    prompt = f"{INSIGHT_SYSTEM}\n\n今日AI动态：\n{items}"
+
     try:
-        resp = client.messages.create(
-            model=model,
-            max_tokens=500,
-            temperature=0.7,
-            system=INSIGHT_SYSTEM,
-            messages=[
-                {"role": "user", "content": f"今日AI动态：\n{items}"},
-            ],
-        )
-        text = next((b.text for b in resp.content if hasattr(b, "text") and b.text), "")
-        return text.strip() if text else "今日AI动态丰富，详见各专区报道。"
+        return _claude_cli_insight(prompt, model)
     except Exception:
         return "今日AI动态丰富，详见各专区报道。"
