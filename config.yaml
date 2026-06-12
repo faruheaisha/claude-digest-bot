@@ -63,9 +63,8 @@ sources:
       weight: 3
 
 ai:
-  summarize_model: "deepseek-chat"       # Fast: sonnet/haiku tier
-  analyze_model: "deepseek-reasoner"     # Deep: opus tier, once per run
-  api_base: "https://api.deepseek.com"
+  summarize_model: "deepseek-v4-flash"    # Fast: deepseek (free/cheap), batch scoring 60+ articles
+  analyze_model: "claude-sonnet-4-6"      # Deep: Claude subscription for daily insight
 
 output:
   archive_dir: "./archive"

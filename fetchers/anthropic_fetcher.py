@@ -5,22 +5,38 @@ from .base import Article, fetch_page_titles, HEADERS
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
 
+def _is_content_link(href: str) -> bool:
+    """Keep only links pointing to actual content pages, not nav/support/claude.ai."""
+    from urllib.parse import urlparse
+    # Accept absolute URLs on anthropic.com that point to content paths
+    if href.startswith("http"):
+        path = urlparse(href).path
+        return any(path.startswith(p) for p in ("/news/", "/research/", "/policy-", "/features/", "/81k-"))
+    # Accept relative paths on anthropic.com
+    if href.startswith(("/news/", "/research/", "/policy-", "/features/", "/81k-")):
+        # Exclude team/category index pages that are not individual articles
+        if href.startswith("/research/team/"):
+            return False
+        return True
+    return False
+
+
 def fetch_anthropic_news() -> list[Article]:
     articles = fetch_page_titles(
         "https://www.anthropic.com/news",
         source_name="Anthropic News",
         zone="claude_anthropic",
     )
-    # Filter: only keep items that look like news posts (not nav links)
-    return [a for a in articles if len(a.title) > 15][:10]
+    return [a for a in articles if _is_content_link(a.url) and len(a.title) > 15][:10]
 
 
 def fetch_anthropic_research() -> list[Article]:
-    return fetch_page_titles(
+    articles = fetch_page_titles(
         "https://www.anthropic.com/research",
         source_name="Anthropic Research",
         zone="claude_anthropic",
-    )[:5]
+    )
+    return [a for a in articles if _is_content_link(a.url) and len(a.title) > 15][:5]
 
 
 def fetch_anthropic_github() -> list[Article]:
