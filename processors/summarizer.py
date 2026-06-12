@@ -1,19 +1,33 @@
 """
-Scoring + insight via Anthropic SDK (routes through proxy, supports any model).
-  summarize_model = deepseek-v4-flash   (fast, batch scoring, deepseek cheap)
-  analyze_model   = claude-sonnet-4-6   (insight, Claude subscription)
+Two-client architecture:
+  score_articles  → DeepSeek v4 Flash  (DEEPSEEK_API_KEY, cheap batch scoring ~60 articles)
+  generate_insight → Claude Sonnet     (OAuth from ~/.claude/.credentials.json, one call/run)
 """
 import json
 import os
+import pathlib
 from anthropic import Anthropic
 from fetchers.base import Article
 
 
-def _get_client() -> Anthropic:
+def _get_scoring_client() -> Anthropic:
+    """DeepSeek for batch scoring — cheap, fast."""
     return Anthropic(
-        api_key=os.environ["ANTHROPIC_AUTH_TOKEN"],
-        base_url=os.environ["ANTHROPIC_BASE_URL"],
+        api_key=os.environ["DEEPSEEK_API_KEY"],
+        base_url="https://api.deepseek.com/anthropic",
     )
+
+
+def _get_insight_client() -> Anthropic:
+    """Claude via OAuth credentials — uses Pro subscription."""
+    creds_path = pathlib.Path.home() / ".claude" / ".credentials.json"
+    try:
+        creds = json.loads(creds_path.read_text())
+        token = creds["claudeAiOauth"]["accessToken"]
+        return Anthropic(api_key=token)
+    except Exception:
+        # Fallback: env var or default SDK auth
+        return Anthropic()
 
 
 SCORE_SYSTEM = """你是一个专注于AI领域的信息分析师。
@@ -43,7 +57,7 @@ tags最多2个，选自：模型发布 安全 开源 融资 监管 研究 工具
 
 
 def score_articles(articles: list[Article]) -> list[Article]:
-    client = _get_client()
+    client = _get_scoring_client()
     model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
     results = []
 
@@ -58,12 +72,10 @@ def score_articles(articles: list[Article]) -> list[Article]:
                     {"role": "user", "content": f"标题：{a.title}\n来源：{a.source}\n摘要：{a.summary[:200]}"},
                 ],
             )
-            # Skip ThinkingBlock — find the first TextBlock
             text = next((b.text for b in resp.content if hasattr(b, "text") and b.text), "")
             text = text.strip()
             if not text:
-                raise ValueError("empty text response")
-            # strip markdown code fence if present
+                raise ValueError("empty response")
             if text.startswith("```"):
                 text = text[text.index("\n"):text.rfind("```")].strip()
             data = json.loads(text)
@@ -86,7 +98,7 @@ INSIGHT_SYSTEM = """你是AI领域的深度观察者。
 
 
 def generate_insight(articles: list[Article]) -> str:
-    client = _get_client()
+    client = _get_insight_client()
     model = os.getenv("ANALYZE_MODEL", "claude-sonnet-4-6")
 
     items = "\n".join(

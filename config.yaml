@@ -63,7 +63,7 @@ sources:
       weight: 3
 
 ai:
-  summarize_model: "deepseek-v4-flash"    # Fast: deepseek (free/cheap), batch scoring 60+ articles
+  summarize_model: "deepseek-v4-flash"    # Fast: deepseek batch scoring ~60 articles
   analyze_model: "claude-sonnet-4-6"      # Deep: Claude subscription for daily insight
 
 output:
