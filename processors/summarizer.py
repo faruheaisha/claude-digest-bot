@@ -19,14 +19,14 @@ def _get_scoring_client() -> Anthropic:
 
 
 def _get_insight_client() -> Anthropic:
-    """Claude via OAuth credentials — uses Pro subscription."""
+    """Claude via OAuth credentials — uses Pro subscription.
+    SDK 0.40+ supports auth_token param which sends Authorization: Bearer header."""
     creds_path = pathlib.Path.home() / ".claude" / ".credentials.json"
     try:
         creds = json.loads(creds_path.read_text())
         token = creds["claudeAiOauth"]["accessToken"]
-        return Anthropic(api_key=token)
+        return Anthropic(auth_token=token)
     except Exception:
-        # Fallback: env var or default SDK auth
         return Anthropic()
 
 
