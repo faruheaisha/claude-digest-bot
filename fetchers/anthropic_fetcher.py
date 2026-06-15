@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime
 from .base import Article, fetch_page_titles, HEADERS
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
@@ -58,12 +59,19 @@ def fetch_anthropic_github() -> list[Article]:
             pushed = repo.get("pushed_at", "")
             url = repo.get("html_url", "")
             if name and url:
+                pub_dt = None
+                if pushed:
+                    try:
+                        pub_dt = datetime.fromisoformat(pushed.replace("Z", "+00:00")).replace(tzinfo=None)
+                    except Exception:
+                        pub_dt = None
                 articles.append(Article(
                     title=f"[GitHub] {name}: {desc[:60]}" if desc else f"[GitHub] {name} updated",
                     url=url,
                     source="Anthropic GitHub",
                     zone="claude_anthropic",
                     summary=f"Repo: {name}. {desc}. Last push: {pushed[:10]}",
+                    published=pub_dt,
                 ))
     except Exception:
         pass

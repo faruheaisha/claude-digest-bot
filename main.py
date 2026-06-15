@@ -79,6 +79,49 @@ def run(mode: str, dry_run: bool) -> None:
     print("Generating insight …")
     insight = generate_insight(articles)
 
+    # ── 4.5. Select display set (top-per-zone) and enrich it ──────────────────────────────────
+    from fetchers.base import fetch_og_meta
+    from processors.summarizer import enrich_article
+
+    max_per_zone = 3 if mode == "morning" else 5
+    zones = ["claude_anthropic", "chinese_ai", "global_ai"]
+    display_set = []
+    for z in zones:
+        zone_arts = sorted(
+            [a for a in articles if a.zone == z], key=lambda x: -x.importance
+        )[:max_per_zone]
+        display_set.extend(zone_arts)
+
+    print(f"Enriching {len(display_set)} display articles (image + date + key points + summary) …")
+    for a in display_set:
+        # image + date
+        if not a.og_image or not a.published:
+            meta = fetch_og_meta(a.url)
+            if not a.og_image:
+                a.og_image = meta.get("image", "")
+            if not a.published and meta.get("published"):
+                a.published = meta["published"]
+        # key points + ~200字 summary (quality gated)
+        enriched = enrich_article(a)
+        if enriched["quality"] >= 2:
+            a.key_points = enriched["key_points"]
+            if enriched["summary"]:
+                a.ai_summary = enriched["summary"]
+        else:
+            # quality too low: keep concise key points if any, fall back to short summary
+            a.key_points = enriched.get("key_points", [])[:2]
+
+    # ── 4.6. Evening lead article (multi-model loop) ────────────────────────────────────────────
+    lead_article = None
+    if mode == "evening":
+        from processors.article_writer import generate_lead_article
+        print("Generating evening lead article ...")
+        try:
+            lead_article = generate_lead_article(articles)
+            score = lead_article.get("score", 0); print(f"  Lead article score: {score}/10")
+        except Exception as e:
+            print(f"  Lead article failed: {e}")
+
     # ── 5. Cross-zone tagging ─────────────────────────────────────────────────
     articles = link_related(articles)
 
@@ -91,7 +134,7 @@ def run(mode: str, dry_run: bool) -> None:
     lookback = _lookback_link(archive_root, now, mode)
 
     md_text = render_md(articles, insight, mode, now, lookback)
-    html_text = render_html(articles, insight, mode, now, lookback)
+    html_text = render_html(articles, insight, mode, now, lookback, lead_article=lead_article)
 
     md_path = archive_dir / f"{stem}.md"
     html_path = archive_dir / f"{stem}.html"
@@ -107,6 +150,21 @@ def run(mode: str, dry_run: bool) -> None:
         return
 
     from delivery.wechat_sender import send_file
+    import time
+    
+    # Wait until scheduled send time before delivery
+    send_time_hm = {'morning': (7, 30), 'evening': (21, 0)}[mode]
+    while True:
+        now = _bj_now()
+        target = now.replace(hour=send_time_hm[0], minute=send_time_hm[1], second=0, microsecond=0)
+        if now >= target:
+            break
+        wait_secs = (target - now).total_seconds()
+        if wait_secs > 0:
+            wait_mins = wait_secs / 60
+            print(f"等待发送时间... 还需 {wait_mins:.1f} 分钟")
+            time.sleep(min(wait_secs, 60))  # Check every 60s
+    
     print("Sending to WeChat …")
     ok = send_file(str(html_path))
     if ok:

@@ -11,6 +11,12 @@ ZONE_ORDER = ["claude_anthropic", "chinese_ai", "global_ai"]
 
 def _enrich(article: Article) -> Article:
     article.importance_icon = IMPORTANCE_ICONS.get(article.importance, "📌")
+    article.pub_date_str = ""
+    if article.published:
+        try:
+            article.pub_date_str = article.published.strftime("%Y年%m月%d日")
+        except Exception:
+            article.pub_date_str = ""
     return article
 
 
@@ -20,6 +26,7 @@ def render_html(
     mode: str,
     date: datetime,
     lookback_link: str = "",
+    lead_article: dict = None,
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATE_DIR)),
@@ -50,6 +57,7 @@ def render_html(
         date_str=date_str,
         mode_label=mode_label,
         insight=insight,
+        lead_article=lead_article,
         claude_articles=top("claude_anthropic"),
         chinese_articles=top("chinese_ai"),
         global_articles=top("global_ai"),

@@ -199,37 +199,97 @@ a { color: inherit; }
 
 /* ── 文章卡片 ──────────────────────────────────────────────── */
 .ac {
-  padding: 16px 0 14px;
+  padding: 20px 0 18px;
   border-bottom: 1px solid var(--border-light);
-  display: grid;
-  grid-template-columns: 22px 1fr;
-  gap: 0 7px;
 }
 
 .ac:last-child { border-bottom: none; }
 
+.ac__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .ac__imp {
-  padding-top: 2px;
+  flex-shrink: 0;
   font-size: 12px;
   letter-spacing: -.04em;
-  line-height: 1.5;
+  line-height: 1.4;
   white-space: nowrap;
   color: var(--text-primary);
 }
 
-.ac__body { min-width: 0; }
-
 .ac__title {
-  display: block;
+  flex: 1;
+  min-width: 0;
   font-family: var(--f-display);
-  font-size: 15px;
+  font-size: 15.5px;
   font-weight: 600;
   line-height: 1.5;
   color: var(--text-primary);
   text-decoration: none;
   text-wrap: pretty;
   transition: opacity .15s;
-  margin-bottom: 5px;
+}
+
+.ac__figure {
+  margin: 0 0 12px;
+}
+
+.ac__cover {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+.ac__date {
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--f-mono);
+  color: var(--text-muted);
+  letter-spacing: .02em;
+}
+
+.ac__date--solo {
+  margin: 0 0 12px;
+}
+
+/* 关键句：accent 色、稍大、强调 */
+.ac__points {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: oklch(from var(--claude) l c h / .05);
+  border-left: 3px solid var(--claude);
+  border-radius: 0 6px 6px 0;
+}
+
+.ac__points li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.65;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.ac__points li:last-child { margin-bottom: 0; }
+
+.ac__points li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  background: var(--claude);
+  border-radius: 50%;
 }
 
 .ac__title:active { opacity: .65; }
@@ -240,10 +300,10 @@ a { color: inherit; }
 }
 
 .ac__summary {
-  font-size: 12.5px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.85;
   color: var(--text-body);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   white-space: pre-line;
   letter-spacing: .01em;
 }
@@ -251,7 +311,7 @@ a { color: inherit; }
 .ac__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -360,6 +420,217 @@ a { color: inherit; }
   .insight__text { font-size: 14.5px; }
   .ac__title { font-size: 14px; }
 }
+
+/* ── 主文章（晚报） ───────────────────────────────────────── */
+.lead {
+  margin: 24px 0 0;
+  padding: 32px 24px 28px;
+  background: var(--bg-surface);
+  border-top: 3px solid var(--claude);
+  border-bottom: 1px solid var(--border);
+}
+
+.lead__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--claude);
+  margin-bottom: 16px;
+}
+
+.lead__badge::before {
+  content: ;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--claude);
+  border-radius: 50%;
+}
+
+.lead__title {
+  font-family: var(--f-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -.03em;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  text-wrap: pretty;
+  border-left: 4px solid var(--claude);
+  padding-left: 14px;
+}
+
+.lead__body {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--text-body);
+  font-family: var(--f-display);
+}
+
+/* ── 长文内部元素样式 ──────────────────────────────────────── */
+.lead__body .la-h2 {
+  font-family: var(--f-display);
+  font-size: 18.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 44px 0 14px;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--claude);
+  letter-spacing: -.01em;
+  line-height: 1.4;
+}
+
+.lead__body .la-h3 {
+  font-family: var(--f-display);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 30px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--claude);
+  line-height: 1.45;
+}
+
+.lead__body .la-p {
+  margin: 0 0 20px;
+  text-indent: 2em;
+  hyphens: auto;
+}
+
+.lead__body .la-p:first-child {
+  text-indent: 0;
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.lead__body .la-hr {
+  border: none;
+  border-top: 1px dashed var(--border);
+  margin: 30px 0;
+}
+
+/* 金句 pull-quote：醒目、交替背景凸显 */
+.lead__body .la-quote {
+  position: relative;
+  margin: 22px 0;
+  padding: 16px 18px 16px 44px;
+  background: oklch(from var(--claude) l c h / .08);
+  border-left: 4px solid var(--claude);
+  border-radius: 0 8px 8px 0;
+  font-family: var(--f-display);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  text-indent: 0;
+}
+
+.lead__body .la-quote::before {
+  content: "\201C";
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  font-family: Georgia, serif;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--claude);
+  opacity: .55;
+}
+
+/* 偶数金句换一种背景色，形成节奏变化 */
+.lead__body .la-quote:nth-of-type(even) {
+  background: oklch(from var(--text-primary) l c h / .05);
+  border-left-color: var(--text-secondary);
+}
+
+.lead__body .la-quote:nth-of-type(even)::before {
+  color: var(--text-secondary);
+}
+
+.lead__body .la-list {
+  margin: 10px 0 16px 1.2em;
+  padding: 0;
+}
+
+.lead__body .la-list li {
+  margin-bottom: 7px;
+  line-height: 1.75;
+  position: relative;
+}
+
+.lead__body .la-list li::marker {
+  color: var(--claude);
+}
+
+.lead__body strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.lead__body em {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.lead__body .la-code {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: #e85d75;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.lead__body .la-link {
+  color: var(--claude);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: opacity .15s;
+}
+
+.lead__body .la-link:hover {
+  opacity: .7;
+}
+
+/* 深度文章插图 + 图注 */
+.lead__body .la-figure {
+  margin: 22px 0;
+}
+
+.lead__body .la-img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+.lead__body .la-cap {
+  margin-top: 8px;
+  font-size: 12px;
+  font-family: var(--f-mono);
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: .02em;
+  padding: 0 8px;
+}
+
+/* 首段做成导语样式：左侧粗线 + 大字 */
+.lead__body .la-p:first-of-type {
+  border-left: 3px solid var(--claude);
+  padding-left: 14px;
+  margin-left: -2px;
+}
+
 </style>
 </head>
 <body>
@@ -381,6 +652,16 @@ a { color: inherit; }
     <p class="insight__text">{{ insight }}</p>
   </section>
 
+
+  <!-- ▸ 深度文章（晚报专属） -->
+  {% if lead_article %}
+  <section class=lead>
+    <div class=lead__badge>深度 · 今日主题</div>
+    <h2 class=lead__title>{{ lead_article.title }}</h2>
+    <div class=lead__body>{{ lead_article.body|safe }}</div>
+  </section>
+  {% endif %}
+
   <!-- ▸ 专区一：Claude / Anthropic -->
   <section class="zone zone--claude">
     <div class="zone__head">
@@ -393,14 +674,27 @@ a { color: inherit; }
       {% if claude_articles %}
         {% for article in claude_articles %}
         <div class="ac">
-          <div class="ac__imp">{{ article.importance_icon }}</div>
-          <div class="ac__body">
+          <div class="ac__head">
+            <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
-            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
-            <div class="ac__meta">
-              <span class="ac__source">{{ article.source }}</span>
-              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
-            </div>
+          </div>
+          {% if article.og_image %}
+          <figure class="ac__figure">
+            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
+            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
+          </figure>
+          {% else %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% endif %}
+          {% if article.key_points %}
+          <ul class="ac__points">
+            {% for p in article.key_points %}<li>{{ p }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+          {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+          <div class="ac__meta">
+            <span class="ac__source">{{ article.source }}</span>
+            {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
           </div>
         </div>
         {% endfor %}
@@ -422,14 +716,27 @@ a { color: inherit; }
       {% if chinese_articles %}
         {% for article in chinese_articles %}
         <div class="ac">
-          <div class="ac__imp">{{ article.importance_icon }}</div>
-          <div class="ac__body">
+          <div class="ac__head">
+            <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
-            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
-            <div class="ac__meta">
-              <span class="ac__source">{{ article.source }}</span>
-              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
-            </div>
+          </div>
+          {% if article.og_image %}
+          <figure class="ac__figure">
+            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
+            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
+          </figure>
+          {% else %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% endif %}
+          {% if article.key_points %}
+          <ul class="ac__points">
+            {% for p in article.key_points %}<li>{{ p }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+          {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+          <div class="ac__meta">
+            <span class="ac__source">{{ article.source }}</span>
+            {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
           </div>
         </div>
         {% endfor %}
@@ -451,14 +758,27 @@ a { color: inherit; }
       {% if global_articles %}
         {% for article in global_articles %}
         <div class="ac">
-          <div class="ac__imp">{{ article.importance_icon }}</div>
-          <div class="ac__body">
+          <div class="ac__head">
+            <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
-            {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
-            <div class="ac__meta">
-              <span class="ac__source">{{ article.source }}</span>
-              {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
-            </div>
+          </div>
+          {% if article.og_image %}
+          <figure class="ac__figure">
+            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
+            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
+          </figure>
+          {% else %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% endif %}
+          {% if article.key_points %}
+          <ul class="ac__points">
+            {% for p in article.key_points %}<li>{{ p }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+          {% if article.ai_summary %}<p class="ac__summary">{{ article.ai_summary }}</p>{% endif %}
+          <div class="ac__meta">
+            <span class="ac__source">{{ article.source }}</span>
+            {% for tag in article.tags %}{% if tag in article._link_colors %}<span class="ac__tag" style="background:{{ article._link_colors[tag] }}">{{ tag }}</span>{% endif %}{% endfor %}
           </div>
         </div>
         {% endfor %}
