@@ -11,6 +11,7 @@ import base64
 import hashlib
 import os
 import secrets
+import sys
 import time
 from pathlib import Path
 from urllib.parse import urlencode, quote
@@ -144,7 +145,20 @@ def send_file(file_path: str) -> bool:
     if not token or not uid:
         raise EnvironmentError("ILINK_TOKEN and WECHAT_UID must be set in environment.")
 
-    media = _upload_file(token, uid, file_path)
+    # WeChat CDN occasionally returns transient 5xx — retry the whole upload
+    # (upload URL + file_key are single-use, so re-run _upload_file from scratch).
+    last_err = None
+    for attempt in range(1, 4):
+        try:
+            media = _upload_file(token, uid, file_path)
+            break
+        except (requests.exceptions.RequestException, RuntimeError) as e:
+            last_err = e
+            if attempt < 3:
+                print(f"  Upload failed ({e}); retry {attempt}/2 in 30s …", file=sys.stderr)
+                time.sleep(30)
+    else:
+        raise RuntimeError(f"upload failed after 3 attempts: {last_err}")
 
     client_id = f"digest-{int(time.time() * 1000)}"
 
