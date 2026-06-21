@@ -1,5 +1,7 @@
 # claude-digest-bot
 
+![claude-digest-bot](assets/promo-banner.svg)
+
 An automated AI news digest system that scrapes, filters, and delivers a daily briefing covering Claude/Anthropic, Chinese AI, and global AI events — twice a day, via WeChat.
 
 ## What it does

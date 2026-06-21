@@ -1,0 +1,37 @@
+<svg width="680" height="420" viewBox="0 0 680 420" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>claude-digest-bot 宣传图</title>
+<desc>米色背景的横版宣传卡,左侧介绍 AI 日报机器人,右侧是一张日报卡片示意。</desc>
+<rect x="0" y="0" width="680" height="420" fill="#F0EEE6"/>
+<rect x="0" y="0" width="8" height="420" fill="#CC785C"/>
+
+<text x="56" y="78" font-family="sans-serif" font-size="15" font-weight="500" fill="#CC785C" letter-spacing="2">CLAUDE-DIGEST-BOT · 开源</text>
+
+<text x="54" y="150" font-family="sans-serif" font-size="58" font-weight="700" fill="#2C2C2A">AI 日报</text>
+<text x="56" y="192" font-family="sans-serif" font-size="22" font-weight="400" fill="#5F5E5A">每天早晚,自动推到你的微信</text>
+
+<g font-family="sans-serif" font-size="17" fill="#444441">
+<circle cx="62" cy="240" r="3.5" fill="#CC785C"/><text x="78" y="245">三条线齐抓:Claude · 国内 · 全球</text>
+<circle cx="62" cy="276" r="3.5" fill="#CC785C"/><text x="78" y="281">AI 打分筛选,只留当天最重要的</text>
+<circle cx="62" cy="312" r="3.5" fill="#CC785C"/><text x="78" y="317">晚报头条:3000 字深度长文</text>
+<circle cx="62" cy="348" r="3.5" fill="#CC785C"/><text x="78" y="353">配图皆为新闻原图,绝不 AI 合成</text>
+</g>
+
+<rect x="56" y="374" width="250" height="30" rx="15" fill="#2C2C2A"/>
+<text x="181" y="394" font-family="monospace" font-size="13" fill="#F0EEE6" text-anchor="middle">github.com/faruheaisha/claude-digest-bot</text>
+
+<rect x="436" y="58" width="200" height="304" rx="14" fill="#FFFFFF" stroke="#E0DCCF" stroke-width="1"/>
+<rect x="436" y="58" width="200" height="46" rx="14" fill="#CC785C"/>
+<rect x="436" y="90" width="200" height="14" fill="#CC785C"/>
+<text x="456" y="86" font-family="sans-serif" font-size="14" font-weight="500" fill="#FFFFFF">🌙 今晚 · AI 晚报</text>
+<text x="456" y="132" font-family="sans-serif" font-size="13" font-weight="500" fill="#2C2C2A">头条 · 深度长文</text>
+<rect x="456" y="144" width="160" height="58" rx="6" fill="#FAECE7"/>
+<text x="466" y="166" font-family="sans-serif" font-size="11" fill="#993C1D">Anthropic 发布 Claude</text>
+<text x="466" y="182" font-family="sans-serif" font-size="11" fill="#993C1D">Opus 新版,推理大幅</text>
+<text x="466" y="198" font-family="sans-serif" font-size="11" fill="#993C1D">提升 ·  3000 字解读</text>
+<line x1="456" y1="222" x2="616" y2="222" stroke="#EEE" stroke-width="1"/>
+<circle cx="462" cy="244" r="3" fill="#888780"/><text x="474" y="248" font-family="sans-serif" font-size="11" fill="#5F5E5A">国内 · 豆包月活破 3 亿</text>
+<circle cx="462" cy="272" r="3" fill="#888780"/><text x="474" y="276" font-family="sans-serif" font-size="11" fill="#5F5E5A">全球 · Gemma 开源新模型</text>
+<circle cx="462" cy="300" r="3" fill="#888780"/><text x="474" y="304" font-family="sans-serif" font-size="11" fill="#5F5E5A">全球 · o3 推理降价 40%</text>
+<rect x="456" y="324" width="80" height="22" rx="11" fill="#F1EFE8"/>
+<text x="496" y="339" font-family="sans-serif" font-size="11" fill="#5F5E5A" text-anchor="middle">07:30 · 21:00</text>
+</svg>
