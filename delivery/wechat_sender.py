@@ -4,8 +4,8 @@ Send a local file to WeChat via the ilink API.
 Ported from wechat-claude-code dist/wechat/upload.js + send.js.
 
 Required env vars (from .env):
-  ILINK_TOKEN   – full botToken string  e.g. "831abc945bee@im.bot:06000..."
-  WECHAT_UID    – target WeChat user UID e.g. "o9cq8089Lq...@im.wechat"
+  ILINK_TOKEN   – full botToken string  e.g. "xxxxxxxxxxxx@im.bot:<secret>"
+  WECHAT_UID    – target WeChat user UID e.g. "xxxxxxxxxx@im.wechat"
 """
 import base64
 import hashlib
