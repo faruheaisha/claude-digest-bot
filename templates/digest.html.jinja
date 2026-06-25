@@ -443,7 +443,7 @@ a { color: inherit; }
 }
 
 .lead__badge::before {
-  content: ;
+  content: "";
   display: inline-block;
   width: 6px;
   height: 6px;
@@ -546,11 +546,11 @@ a { color: inherit; }
 /* 偶数金句换一种背景色，形成节奏变化 */
 .lead__body .la-quote:nth-of-type(even) {
   background: oklch(from var(--text-primary) l c h / .05);
-  border-left-color: var(--text-secondary);
+  border-left-color: var(--text-muted);
 }
 
 .lead__body .la-quote:nth-of-type(even)::before {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .lead__body .la-list {
@@ -575,7 +575,7 @@ a { color: inherit; }
 
 .lead__body em {
   font-style: italic;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .lead__body .la-code {
@@ -678,13 +678,8 @@ a { color: inherit; }
             <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
           </div>
-          {% if article.og_image %}
-          <figure class="ac__figure">
-            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
-            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
-          </figure>
-          {% else %}
-          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% if article.pub_date_str %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str }}</div>
           {% endif %}
           {% if article.key_points %}
           <ul class="ac__points">
@@ -720,13 +715,8 @@ a { color: inherit; }
             <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
           </div>
-          {% if article.og_image %}
-          <figure class="ac__figure">
-            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
-            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
-          </figure>
-          {% else %}
-          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% if article.pub_date_str %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str }}</div>
           {% endif %}
           {% if article.key_points %}
           <ul class="ac__points">
@@ -762,13 +752,8 @@ a { color: inherit; }
             <span class="ac__imp">{{ article.importance_icon }}</span>
             <a class="ac__title" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">{{ article.title }}</a>
           </div>
-          {% if article.og_image %}
-          <figure class="ac__figure">
-            <img class="ac__cover" src="{{ article.og_image }}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'">
-            <figcaption class="ac__date">{{ article.pub_date_str or "发布日期未知" }}</figcaption>
-          </figure>
-          {% else %}
-          <div class="ac__date ac__date--solo">{{ article.pub_date_str or "发布日期未知" }}</div>
+          {% if article.pub_date_str %}
+          <div class="ac__date ac__date--solo">{{ article.pub_date_str }}</div>
           {% endif %}
           {% if article.key_points %}
           <ul class="ac__points">

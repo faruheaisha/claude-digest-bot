@@ -21,7 +21,6 @@ class Article:
     ai_summary: str = ""  # AI-generated rich summary (~200 chars, for displayed articles)
     key_points: list = field(default_factory=list)  # 2-3 key sentences, for displayed articles
     tags: list = field(default_factory=list)
-    og_image: str = ""
 
     @property
     def uid(self) -> str:
@@ -87,74 +86,3 @@ def fetch_page_titles(url: str, source_name: str, zone: str) -> list[Article]:
             continue
         articles.append(Article(title=title, url=href, source=source_name, zone=zone))
     return articles[:10]
-
-
-
-def fetch_og_image(url: str) -> str:
-    """Extract og:image from a URL. Returns empty string on failure."""
-    return fetch_og_meta(url).get("image", "")
-
-
-def _parse_date(s: str) -> Optional[datetime]:
-    """Parse common date formats from meta tags. Returns None on failure."""
-    if not s:
-        return None
-    s = s.strip()
-    # ISO 8601 (e.g. 2026-06-14T10:00:00Z, 2026-06-14T10:00:00+08:00)
-    try:
-        cleaned = s.replace("Z", "+00:00")
-        return datetime.fromisoformat(cleaned).replace(tzinfo=None)
-    except Exception:
-        pass
-    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d %b %Y", "%b %d, %Y", "%Y年%m月%d日"):
-        try:
-            return datetime.strptime(s[:len(s)], fmt)
-        except Exception:
-            continue
-    # Fallback: pull first YYYY-MM-DD substring
-    import re as _re
-    m = _re.search(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
-    if m:
-        try:
-            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        except Exception:
-            pass
-    return None
-
-
-def fetch_og_meta(url: str) -> dict:
-    """Extract og:image AND published date from a URL.
-    Returns {"image": str, "published": datetime|None}."""
-    result = {"image": "", "published": None}
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=8)
-        soup = BeautifulSoup(resp.text, "html.parser")
-
-        og = soup.find("meta", property="og:image") or soup.find("meta", attrs={"name": "og:image"})
-        if og and og.get("content"):
-            img_url = og["content"].strip()
-            if img_url.startswith("//"):
-                img_url = "https:" + img_url
-            result["image"] = img_url
-
-        # Published date: try several common meta tags + <time>
-        date_str = ""
-        for prop in ("article:published_time", "og:article:published_time"):
-            tag = soup.find("meta", property=prop)
-            if tag and tag.get("content"):
-                date_str = tag["content"]
-                break
-        if not date_str:
-            for name in ("date", "publish-date", "pubdate", "publication_date", "DC.date.issued"):
-                tag = soup.find("meta", attrs={"name": name})
-                if tag and tag.get("content"):
-                    date_str = tag["content"]
-                    break
-        if not date_str:
-            t = soup.find("time")
-            if t:
-                date_str = t.get("datetime") or t.get_text(strip=True)
-        result["published"] = _parse_date(date_str)
-    except Exception:
-        pass
-    return result

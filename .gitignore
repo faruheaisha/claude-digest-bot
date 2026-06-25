@@ -12,6 +12,9 @@ secrets/
 # ── Local archive (keep privately; push only if you want public record) ───────
 archive/
 
+# ── Runtime state (cross-day dedup memory) ───────────────────────────────────
+seen.json
+
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/
 *.log

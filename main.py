@@ -66,12 +66,23 @@ def run(mode: str, dry_run: bool) -> None:
         print("No articles found. Exiting.")
         sys.exit(0)
 
-    # ── 3. Score with DeepSeek ────────────────────────────────────────────────
+    # ── 2.5. Cross-day dedup: drop news already covered in a past digest ───────
+    from processors.history import load_seen, filter_unseen
+    seen = load_seen()
+    before = len(articles)
+    articles = filter_unseen(articles, seen)
+    print(f"  After cross-day dedup: {len(articles)} (dropped {before - len(articles)} already covered)")
+
+    if not articles:
+        print("No fresh articles today. Exiting.")
+        sys.exit(0)
+
+    # ── 3. Score with MiniMax ─────────────────────────────────────────────────
     print("Scoring articles …")
     articles = score_articles(articles)
 
-    # filter low-importance: morning = only important (≥4), evening = worth-knowing (≥3)
-    threshold = 4 if mode == "morning" else 3
+    # filter low-importance: keep worth-knowing (≥3)
+    threshold = 3
     articles = [a for a in articles if a.importance >= threshold]
     print(f"  After importance filter (≥{threshold}): {len(articles)}")
 
@@ -80,10 +91,9 @@ def run(mode: str, dry_run: bool) -> None:
     insight = generate_insight(articles)
 
     # ── 4.5. Select display set (top-per-zone) and enrich it ──────────────────────────────────
-    from fetchers.base import fetch_og_meta
     from processors.summarizer import enrich_article
 
-    max_per_zone = 3 if mode == "morning" else 5
+    max_per_zone = 5
     zones = ["claude_anthropic", "chinese_ai", "global_ai"]
     display_set = []
     for z in zones:
@@ -92,15 +102,8 @@ def run(mode: str, dry_run: bool) -> None:
         )[:max_per_zone]
         display_set.extend(zone_arts)
 
-    print(f"Enriching {len(display_set)} display articles (image + date + key points + summary) …")
+    print(f"Enriching {len(display_set)} display articles (key points + summary) …")
     for a in display_set:
-        # image + date
-        if not a.og_image or not a.published:
-            meta = fetch_og_meta(a.url)
-            if not a.og_image:
-                a.og_image = meta.get("image", "")
-            if not a.published and meta.get("published"):
-                a.published = meta["published"]
         # key points + ~200字 summary (quality gated)
         enriched = enrich_article(a)
         if enriched["quality"] >= 2:
@@ -153,7 +156,7 @@ def run(mode: str, dry_run: bool) -> None:
     import time
     
     # Wait until scheduled send time before delivery
-    send_time_hm = {'morning': (7, 30), 'evening': (21, 0)}[mode]
+    send_time_hm = (21, 0)
     while True:
         now = _bj_now()
         target = now.replace(hour=send_time_hm[0], minute=send_time_hm[1], second=0, microsecond=0)
@@ -169,6 +172,9 @@ def run(mode: str, dry_run: bool) -> None:
     ok = send_file(str(html_path))
     if ok:
         print("  Delivered successfully.")
+        # Mark displayed news as covered so it never repeats in a future digest
+        from processors.history import mark_seen
+        mark_seen(display_set, seen)
     else:
         print("  Delivery failed (check ilink API response).", file=sys.stderr)
         sys.exit(1)
@@ -178,9 +184,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AI Digest Bot")
     parser.add_argument(
         "--mode",
-        choices=["morning", "evening"],
-        required=True,
-        help="morning (07:30 BJ) or evening (21:00 BJ)",
+        choices=["evening"],
+        default="evening",
+        help="evening digest (21:00 BJ)",
     )
     parser.add_argument(
         "--dry-run",

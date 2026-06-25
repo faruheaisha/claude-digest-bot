@@ -1,8 +1,5 @@
 from .base import Article, fetch_rss
 
-AI_KEYWORDS_EN = ["AI", "artificial intelligence", "machine learning", "LLM", "GPT",
-                  "Claude", "Gemini", "model", "neural", "Anthropic", "OpenAI", "DeepMind"]
-
 
 def fetch_global_ai() -> list[Article]:
     sources = [

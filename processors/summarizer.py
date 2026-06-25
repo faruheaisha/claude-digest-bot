@@ -1,7 +1,6 @@
 """
-Two-client architecture:
-  score_articles   -> DeepSeek v4 Flash  (DEEPSEEK_API_KEY, cheap batch scoring ~60 articles)
-  generate_insight -> DeepSeek v4 Flash  (DEEPSEEK_API_KEY, no OAuth needed)
+score_articles / generate_insight / enrich_article all run on MiniMax-M3
+(MINIMAX_API_KEY) via its Anthropic-compatible endpoint.
 """
 import json
 import os
@@ -11,10 +10,10 @@ from fetchers.base import Article
 
 
 def _get_scoring_client() -> Anthropic:
-    """DeepSeek for batch scoring -- cheap, fast."""
+    """MiniMax-M3 for batch scoring."""
     return Anthropic(
-        api_key=os.environ["DEEPSEEK_API_KEY"],
-        base_url="https://api.deepseek.com/anthropic",
+        api_key=os.environ["MINIMAX_API_KEY"],
+        base_url="https://api.minimaxi.com/anthropic",
     )
 
 
@@ -46,7 +45,7 @@ tags最多2个，选自：模型发布 安全 开源 融资 监管 研究 工具
 
 def score_articles(articles: list[Article]) -> list[Article]:
     client = _get_scoring_client()
-    model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
+    model = os.getenv("SUMMARIZE_MODEL", "MiniMax-M3")
     results = []
 
     for a in articles:
@@ -87,7 +86,7 @@ INSIGHT_SYSTEM = """你是AI领域的深度观察者。
 
 def generate_insight(articles: list[Article]) -> str:
     client = _get_scoring_client()
-    model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
+    model = os.getenv("SUMMARIZE_MODEL", "MiniMax-M3")
 
     items = "\n".join(
         f"[{a.zone}] {a.source}: {a.ai_summary or a.title} (重要性:{a.importance})"
@@ -136,7 +135,7 @@ def enrich_article(article: Article) -> dict:
     """Generate key_points (2-3) + rich summary (~200字) for a displayed article.
     Returns {"key_points": list, "summary": str, "quality": int}."""
     client = _get_scoring_client()
-    model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
+    model = os.getenv("SUMMARIZE_MODEL", "MiniMax-M3")
 
     context = f"标题：{article.title}\n来源：{article.source}\n原始摘要：{article.summary[:400]}"
     if article.ai_summary:

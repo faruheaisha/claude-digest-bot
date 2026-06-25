@@ -5,7 +5,7 @@
 <td align="center">
   <img src="https://avatars.githubusercontent.com/u/76263028" width="60" alt="Claude (Anthropic)" /><br/>
   <strong>Claude (Anthropic)</strong><br/>
-  <sub>AI summarization · importance scoring · daily insight generation</sub>
+  <sub>Code authorship · architecture · prompt design (via Claude Code)</sub>
 </td>
 <td align="center">
   <img src="https://github.com/faruheaisha.png" width="60" alt="Faruhe Aisha" /><br/>
@@ -17,4 +17,4 @@
 
 ---
 
-*This project uses [DeepSeek](https://platform.deepseek.com) as the inference backend, with model mapping consistent with [wechat-claude-code](https://github.com/faruheaisha/wechat-claude-code).*
+*This project uses [MiniMax](https://platform.minimaxi.com) (model MiniMax-M3) as the inference backend, via its Anthropic-compatible endpoint.*

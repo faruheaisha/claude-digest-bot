@@ -2,10 +2,10 @@
 Evening lead article: long-form tech analysis with auto proofreading.
 
 Flow:
-  1. DeepSeek generates 2000+ word technical blog post
-  2. DeepSeek reviews and scores (1-10)
-  3. If score < 7, DeepSeek revises
-  4. huashu-proofreading auto-removes AI flavor
+  1. MiniMax-M3 generates a 3000-4000 word technical blog post
+  2. MiniMax-M3 reviews and scores (1-10)
+  3. If score < 7, MiniMax-M3 revises
+  4. AI-flavor removal pass
   5. Markdown converted to beautiful HTML
 """
 import json
@@ -15,16 +15,16 @@ from anthropic import Anthropic
 from fetchers.base import Article
 
 
-def _deepseek_client() -> Anthropic:
+def _minimax_client() -> Anthropic:
     return Anthropic(
-        api_key=os.environ["DEEPSEEK_API_KEY"],
-        base_url="https://api.deepseek.com/anthropic",
+        api_key=os.environ["MINIMAX_API_KEY"],
+        base_url="https://api.minimaxi.com/anthropic",
     )
 
 
 WRITE_SYSTEM = """你是一位资深的AI技术评论作家，文笔流畅、洞察深刻、有自己的观点。
 
-任务：基于今日AI新闻，写一篇 3000-4000 字的深度长文。这是要让读者花至少 3 分钟认真读完的文章，必须有足够的信息密度和思考深度，不能浮于表面。
+任务：基于今日AI新闻，写一篇 3000-4000 字的深度长文（硬性上限 4000 字，绝不超过）。这是要让读者花至少 3 分钟认真读完的文章，必须有足够的信息密度和思考深度，不能浮于表面。
 
 深度要求（这是重点，每条都要做到）：
 1. **拆机制**：不只说"发生了什么"，要拆"为什么这样设计""背后的技术原理是什么"。比如不写"性能提升了"，而写清楚是靠什么手段、付出什么代价、有什么前提。
@@ -35,7 +35,7 @@ WRITE_SYSTEM = """你是一位资深的AI技术评论作家，文笔流畅、洞
 6. **落到人**：分别说清楚这对不同角色（开发者 / 创业者 / 大厂 / 普通用户）各意味着什么。
 7. **给判断**：结尾要有作者明确的预测或可执行的建议，敢于下结论。
 
-结构（严格使用以下Markdown格式，5-6个部分，每部分 600-800 字）：
+结构（严格使用以下Markdown格式，5 个部分，每部分约 600-720 字，全文不超过 4000 字）：
 # 文章标题（具体、有钩子，能引发好奇）
 
 [导言段落，200字左右，抛出核心论点和最反直觉的发现]
@@ -76,17 +76,17 @@ WRITE_SYSTEM = """你是一位资深的AI技术评论作家，文笔流畅、洞
 - 标题要具体，不要用"分析""探讨"这类空洞词
 - 每个部分都要有真实的信息增量，禁止用车轱辘话凑字数
 - 允许有争议性观点，比平铺直叙更有价值
-- 全文字数务必达到 3000 字以上，这是硬性要求"""
+- 全文字数控制在 3000-4000 字之间，绝不超过 4000 字，这是硬性要求"""
 
 REVIEW_SYSTEM = """你是严格的技术内容编辑。评审一篇深度长文，标准（总分10分）：
 - 原创洞察（0-2分）：有没有超越新闻的独特见解
 - 技术深度（0-2分）：是否拆解了机制、给了具体数据
 - 思辨性（0-2分）：是否有反方观点、风险分析，不只唱赞歌
-- 篇幅与信息密度（0-2分）：是否达到3000字以上且无注水
+- 篇幅与信息密度（0-2分）：是否在 3000-4000 字之间且无注水
 - 可读性与说服力（0-2分）：结构清晰、逻辑连贯、观点有支撑
 
 输出JSON：{"score": <1-10>, "strengths": "...", "improvements": "具体指出哪部分太浅、该补什么"}
-只输出JSON。如果文章不足3000字或某部分明显注水，扣分并在improvements里指出。"""
+只输出JSON。如果文章不足3000字、超过4000字、或某部分明显注水，扣分并在improvements里指出。"""
 
 
 PROOFREAD_SYSTEM = """你是 huashu-proofreading 文字编辑，专长是去掉 AI 写作的生硬感和套路感。
@@ -102,10 +102,10 @@ PROOFREAD_SYSTEM = """你是 huashu-proofreading 文字编辑，专长是去掉 
 
 
 def _call_proofreading(text: str) -> str:
-    """用 DeepSeek 执行 huashu-proofreading 降 AI 味（不依赖 OAuth）。"""
+    """用 MiniMax 执行降 AI 味改写。"""
     try:
-        client = _deepseek_client()
-        model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
+        client = _minimax_client()
+        model = os.getenv("SUMMARIZE_MODEL", "MiniMax-M3")
         resp = client.messages.create(
             model=model, max_tokens=8000, temperature=0.6,
             system=PROOFREAD_SYSTEM,
@@ -217,57 +217,6 @@ def _inline_format(text: str) -> str:
     return text
 
 
-def _figure_html(url: str, source: str, title: str) -> str:
-    """Build an inline figure with an accurate source caption."""
-    import html as _html
-    cap = "图：" + _html.escape(source or "来源未知")
-    if title:
-        cap += " · " + _html.escape(title[:40])
-    return (
-        '<figure class="la-figure">'
-        f'<img class="la-img" src="{_html.escape(url)}" alt="" loading="lazy" '
-        'onerror="this.parentNode.style.display=\'none\'">'
-        f'<figcaption class="la-cap">{cap}</figcaption>'
-        '</figure>'
-    )
-
-
-def _inject_images(body_html: str, articles: list) -> str:
-    """Insert up to 3 accurate source images (with captions) before section headers."""
-    imgs = []
-    seen = set()
-    for a in articles:
-        img = getattr(a, "og_image", "")
-        if img and img not in seen:
-            seen.add(img)
-            imgs.append((img, a.source, a.title))
-        if len(imgs) >= 2:
-            break
-    if not imgs:
-        return body_html
-
-    parts = re.split(r'(<h2 class="la-h2">)', body_html)
-    result = []
-    h2_count = 0
-    img_idx = 0
-    for seg in parts:
-        if seg == '<h2 class="la-h2">':
-            h2_count += 1
-            # insert one image before each section header from the 2nd onward
-            if h2_count >= 2 and img_idx < len(imgs):
-                url, source, title = imgs[img_idx]
-                result.append(_figure_html(url, source, title))
-                img_idx += 1
-        result.append(seg)
-
-    # If body had too few sections, append a remaining image at the end
-    if img_idx == 0 and imgs:
-        url, source, title = imgs[0]
-        result.append(_figure_html(url, source, title))
-
-    return "".join(result)
-
-
 def generate_lead_article(articles: list[Article]) -> dict:
     """
     Generate 2000+ word tech blog article with auto proofreading.
@@ -280,13 +229,13 @@ def generate_lead_article(articles: list[Article]) -> dict:
     )
 
     prompt = f"今日AI新闻条目：\n{news_items}\n\n基于这些新闻，写一篇深度技术分析文章。"
-    ds_client = _deepseek_client()
-    ds_model = os.getenv("SUMMARIZE_MODEL", "deepseek-v4-flash")
+    mm_client = _minimax_client()
+    mm_model = os.getenv("SUMMARIZE_MODEL", "MiniMax-M3")
 
     article_text = ""
     try:
-        resp = ds_client.messages.create(
-            model=ds_model,
+        resp = mm_client.messages.create(
+            model=mm_model,
             max_tokens=8000,
             temperature=0.5,
             system=WRITE_SYSTEM,
@@ -303,8 +252,8 @@ def generate_lead_article(articles: list[Article]) -> dict:
     for round_num in range(2):
         try:
             review_prompt = f"请评审以下文章：\n\n{article_text}"
-            resp = ds_client.messages.create(
-                model=ds_model, max_tokens=300, temperature=0.2,
+            resp = mm_client.messages.create(
+                model=mm_model, max_tokens=300, temperature=0.2,
                 system=REVIEW_SYSTEM,
                 messages=[{"role": "user", "content": review_prompt}],
             )
@@ -326,8 +275,8 @@ def generate_lead_article(articles: list[Article]) -> dict:
             revise_prompt = (
                 f"根据以下反馈修改文章（评分 {score}/10）：{improvements}\n\n原文：\n{article_text}"
             )
-            resp = ds_client.messages.create(
-                model=ds_model, max_tokens=8000, temperature=0.5,
+            resp = mm_client.messages.create(
+                model=mm_model, max_tokens=8000, temperature=0.5,
                 system=WRITE_SYSTEM,
                 messages=[{"role": "user", "content": revise_prompt}],
             )
@@ -362,7 +311,5 @@ def generate_lead_article(articles: list[Article]) -> dict:
     body_md = "\n".join(body_lines).strip()
     # Convert markdown to beautiful HTML
     body_html = _markdown_to_html(body_md)
-    # Inject accurate source images with captions
-    body_html = _inject_images(body_html, sorted(articles, key=lambda a: -a.importance))
 
     return {"title": title, "body": body_html, "score": best_score}
