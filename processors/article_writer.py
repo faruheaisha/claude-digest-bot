@@ -217,6 +217,30 @@ def _inline_format(text: str) -> str:
     return text
 
 
+def _inject_illustrations(body_html: str, illus: dict) -> str:
+    """Cover image at the top, then one section image before each section header."""
+    def fig(url: str) -> str:
+        return (
+            '<figure class="la-figure">'
+            f'<img class="la-img" src="{url}" alt="" loading="lazy" '
+            'onerror="this.parentNode.style.display=\'none\'"></figure>'
+        )
+    section_urls = [s["url"] for s in illus.get("sections", []) if s.get("url")]
+    parts = re.split(r'(<h2 class="la-h2">)', body_html)
+    out, img_i = [], 0
+    for seg in parts:
+        if seg == '<h2 class="la-h2">' and img_i < len(section_urls):
+            out.append(fig(section_urls[img_i]))
+            img_i += 1
+        out.append(seg)
+    body = "".join(out)
+    for u in section_urls[img_i:]:
+        body += fig(u)
+    if illus.get("cover"):
+        body = fig(illus["cover"]) + body
+    return body
+
+
 def generate_lead_article(articles: list[Article]) -> dict:
     """
     Generate 2000+ word tech blog article with auto proofreading.
@@ -311,5 +335,8 @@ def generate_lead_article(articles: list[Article]) -> dict:
     body_md = "\n".join(body_lines).strip()
     # Convert markdown to beautiful HTML
     body_html = _markdown_to_html(body_md)
+    # 小黑 illustrations (text-free): cover + up to 4 per-section knowledge images
+    from processors.illustrator import generate_illustrations
+    body_html = _inject_illustrations(body_html, generate_illustrations(title, body_md))
 
     return {"title": title, "body": body_html, "score": best_score}
