@@ -1,6 +1,7 @@
 # ── Secrets (never commit) ───────────────────────────────────────────────────
 .env
 *.env
+.env.*
 !.env.example
 .credentials.json
 *.credentials.json
@@ -29,6 +30,12 @@ env/
 *.egg-info/
 dist/
 build/
+
+# ── Editor / swap (may contain secret-file backups) ──────────────────────────
+*.swp
+*.swo
+*.save
+*~
 
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
